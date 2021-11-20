@@ -1,27 +1,6 @@
 const Connection = require("mysql2")
 
-function appFunctions() {
-
-
-function viewEmployees() {
-    connection.query(`SELECT * FROM employee;`, (err, res) => {
-    if (err) throw err;
-    console.log('function ran')
-    initialPrompt() 
-    })
-};
-
-function viewDepartments() {
-    const sql = `SELECT * FROM department`;
-    return sql
-
-};
-
-function viewRoles() { 
-    const sql = `SELECT * FROM roles`;
-    
-};
-
+function  appfunctions() {
 
 
 
@@ -44,5 +23,5 @@ function updateEmployeeRole() {
     const sql = `SELECT * FROM employee`;
 
 };
-}
+
 module.exports = appFunctions
