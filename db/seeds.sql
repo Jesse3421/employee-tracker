@@ -27,3 +27,7 @@ VALUES
 ('Claire', 'Johnson', 3, 1),
 ('Kelly', 'Greer', 4, NULL);
 
+INSERT INTO manager (first_name, last_name, id)
+VALUES
+('Jeff', 'Thomas', 1),
+('Kelly', 'Greer', 2);

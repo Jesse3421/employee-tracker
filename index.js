@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const table = require('console.table');
 const db = require('./db');
 const { listenerCount } = require('events');
-
+const Connection = require('./db/connection');
 
 initialPrompt();
 
@@ -26,31 +26,31 @@ function initialPrompt() {
    .then((choice) => {
         switch (choice.menu) {
             case "View All Employees":
-            viewEmployees(); //create view all employees function
+            viewEmployees(); 
             break;
 
             case "View All Departments":
-            viewDepartments(); //create function
+            viewDepartments(); 
             break; 
 
             case "View All Roles":
-            viewRoles(); //create function
+            viewRoles(); 
             break; 
 
             case "Add Employee":
-            addEmployee(); //create function
+            addEmployee(); 
             break; 
 
             case "Add Department":
-            addDepartment(); //create function
+            addDepartment(); 
             break; 
 
             case "Add Role":
-            addRole(); //create function
+            addRole(); 
             break; 
             
             case "Update Employee Role":
-            updateEmployeeRole(); //create function
+            updateEmployeeRole(); 
             break; 
             
             case "Exit":
@@ -95,7 +95,7 @@ function addEmployee() {
             message: "What is the last name of the employee you would like to add?",
             name: "last_name"
         }
-    ]).then(function(answer){
+        ]).then(function(answer){
         
         let firstName = answer.first_name;
         let lastName = answer.last_name;
@@ -113,10 +113,11 @@ function addEmployee() {
             }).then(answer => {
                 let roleId = answer.roleId
                db.assignManager()
-               .then(([ employees ]) => {
-                   const managerChoices = employees.map(({ id, first_name, last_name }) => ({
+               .then(([ manager ]) => {
+                   
+                   const managerChoices = manager.map(({ id, first_name, last_name }) => ({
                        name: `${first_name} ${last_name}`,
-                       value: 'id',
+                       value: id,
                    })) 
             inquirer.prompt({
                 type: 'list',
@@ -124,70 +125,102 @@ function addEmployee() {
                 message: 'Who is the manager of the new employee?',
                 choices: managerChoices
             }).then(answer => {
-                let employee = {
-                    manager_id: answer.manager_id,
-                    role_id: answer.roleId,
+                //let managerId = answer.value
+                let newEmployee = {
+                    manager_id: answer.managerId,
+                    role_id: roleId,
                     first_name: firstName,
-                    last_name: last_name
+                    last_name: lastName
                     }
-                db.addEmployee()
-                .then(([ employee ]) => {
-                    console.table(employee);
+                db.addEmployee(newEmployee)
                 }).then(() => initialPrompt());
                }) 
                })
             })
-        })
-    })      
-    };
-// function addDepartment() {
-//     inquirer.prompt({
-      
-//         type: "input",
-//         message: "What is the name of the department you would like to add?",
-//         name: "dept_name"
+        })       
+};
+//Add Department
+function addDepartment() {
+    inquirer.prompt({
+        type: "input",
+        message: "What is the name of the department you would like to add?",
+        name: "dept_name"
+    }).then(function(department){
+        db.addDept(department)
+        .then(() => initialPrompt())
+    })  
+};
+//Add new role, salary and assign to department
+function addRole() {   
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: 'What is the job title for the role you would like to add?',
+            name: 'roleName'
+        },
+        {
+            type: 'input',
+            message: 'What is the salary for the role?',
+            name: 'salary'
+        }
+    ])
+    .then(function(answer){
+        let title = answer.roleName;
+        let salary = answer.salary;
+        db.findAllDept()
+        .then(([ departments ]) => {
+            const deptChoices = departments.map(({ id, dept_name }) => ({
+                name: dept_name,
+                value: id
+            }))
+        inquirer.prompt({
+            type: 'list',
+            message: 'Which department is this role is under?',
+            name: 'deptName',
+            choices: deptChoices
+        }).then(answer =>{
+            let newRole = {
+                title: title,
+                salary: salary,
+                department_id: answer.deptName
+            }
+            db.addRole(newRole)
+        }).then(() => initialPrompt())
+    })
+})  
+};
+//Pick an employee to update their role
+function updateEmployeeRole() {
+    db.findAllEmployees()
+    .then(([ employee ]) => {
+        const employeeChoices = employee.map(({ first_name, last_name, id}) => ({
+            name: `${first_name} ${last_name}`,
+            value: id
+        }))
+    inquirer.prompt({
+        type: 'list',
+        message: 'Which employee would you like to make a role update for?',
+        name: 'employeeList',
+        choices: employeeChoices
+    }).then(answer => {
+        console.log(answer)
+        let selectedEmpUpdate = answer.employeeList
+    db.findRoles()
+    .then(([ roles ]) => {
+        const roleChoices = roles.map(({ title, id }) => ({
+            name: title,
+            value: id
+        }))
+        inquirer.prompt({
+            type: 'list',
+            message: 'Choose an updated title for the employee',
+            name: 'updateRole',
+            choices: roleChoices
+        }).then(answer => {
+            db.updateEmployeeRole(selectedEmpUpdate, answer.updateRole)
+        }).then(() => initialPrompt())
+    })
+})
+})   
+};
 
-//     }).then(function(answer){
-//         //const deptName = answer.dept_name
-
-//     })
-    
-    
-// };
-
-// function addRole() {
-    
-//     inquirer.prompt([
-//         {
-      
-//             type: 'input',
-//             message: 'What is the job title for the role you would like to add?',
-//             name: 'roleName'
-//         },
-//         {
-//             type: 'input',
-//             message: 'What is the salary for the role?',
-//             name: 'salary'
-//         },
-//         {
-//             type: 'input',
-//             message: 'Which department is this role is under?',
-//             name: 'deptName'
-//         }
-//     ])
-//     .then(function(answer){
-    
-    
-//         connection.query(`INSERT INTO roles (job_title, salary, department) VALUES (?, ?, ?)`, [answer.roleName, answer.salary, answer.deptName], function(err, res) {
-//             if (err) throw err;
-//             viewRoles()
-//             initialPrompt()
-//         })
-//     })
-    
-// };
-
-// function updateEmployeeRole() {
-//     const sql = `SELECT * FROM employee`;
-
-// };
